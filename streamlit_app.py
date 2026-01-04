@@ -112,8 +112,15 @@ def apply_professional_styling():
             color: #FFeecc;
         }}
         
-        /* Headers - WHITE instead of gold */
-        h1, h2, h3 {{
+        /* Headers - WHITE with smaller title */
+        h1 {{
+            color: #FFFFFF !important;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            font-size: 1.8rem !important;
+            font-weight: 600 !important;
+        }}
+        
+        h2, h3 {{
             color: #FFFFFF !important;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
         }}
@@ -135,6 +142,12 @@ def apply_professional_styling():
             border-radius: 8px;
             padding: 10px;
             margin: 10px 0;
+        }}
+        
+        /* Section dividers */
+        .section-divider {{
+            border-top: 2px solid rgba(255,255,255,0.2);
+            margin: 20px 0;
         }}
         </style>
     """, unsafe_allow_html=True)
@@ -396,49 +409,70 @@ def main():
     with tab_weather:
         st.header("Meteorological Intelligence")
         
-        # Single centered radar with continuous loop
-        st.subheader("Live Radar - Wilson, NC")
+        # Main layout: 75% metrics left, 25% radar right
+        main_col, radar_col = st.columns([3, 1])
         
-        # Centered Windy.com radar embed for Wilson, NC (35.726, -77.916)
-        windy_radar = """
-        <div class="radar-container" style="display: flex; justify-content: center;">
-            <iframe width="100%" height="600" 
-            src="https://embed.windy.com/embed2.html?lat=35.726&lon=-77.916&detailLat=35.726&detailLon=-77.916&width=1000&height=600&zoom=9&level=surface&overlay=radar&product=ecmwf&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=mph&metricTemp=%C2%B0F&radarRange=-1" 
-            frameborder="0"></iframe>
-        </div>
-        """
-        st.components.v1.html(windy_radar, height=620)
-        
-        st.markdown("---")
-        
-        # Weather metrics
-        weather_col1, weather_col2, weather_col3 = st.columns(3)
-        
-        with weather_col1:
-            st.subheader("Precipitation")
-            st.metric(
-                "24-Hour Actual", 
-                f"{site_data['precipitation']['actual_24h']} IN",
-                delta=f"{site_data['precipitation']['forecast_prob']}% probability"
-            )
+        with main_col:
+            # Weather metrics in organized rows
+            st.subheader("Current Conditions")
             
-        with weather_col2:
-            st.subheader("Lightning")
-            st.metric(
-                "Recent Strikes (50mi)", 
-                site_data['lightning']['recent_strikes_50mi'],
-                delta=site_data['lightning']['forecast']
-            )
+            metric_row1 = st.columns(3)
+            with metric_row1[0]:
+                st.metric(
+                    "24-Hour Precipitation", 
+                    f"{site_data['precipitation']['actual_24h']} IN",
+                    delta=f"{site_data['precipitation']['forecast_prob']}% forecast"
+                )
+            with metric_row1[1]:
+                st.metric(
+                    "Lightning Strikes (50mi)", 
+                    site_data['lightning']['recent_strikes_50mi'],
+                    delta=site_data['lightning']['forecast']
+                )
+            with metric_row1[2]:
+                st.metric(
+                    "Soil Saturation (API)", 
+                    f"{round(api, 2)}",
+                    delta=work_status
+                )
             
-        with weather_col3:
-            st.subheader("Conditions")
-            st.metric("Soil Saturation (API)", f"{round(api, 2)}", delta=work_status)
+            st.markdown('<div class="section-divider"></div>', unsafe_allow_html=True)
+            
+            # Historical precipitation chart
+            if not history.empty and 'date' in history.columns:
+                st.subheader("7-Day Precipitation History")
+                chart_data = history.tail(7).set_index('date')['precip_actual']
+                st.line_chart(chart_data, height=250)
+            
+            st.markdown('<div class="section-divider"></div>', unsafe_allow_html=True)
+            
+            # Additional weather details
+            st.subheader("Forecast & Analysis")
+            detail_col1, detail_col2 = st.columns(2)
+            
+            with detail_col1:
+                st.write("**Precipitation Forecast**")
+                st.write(f"Probability: {site_data['precipitation']['forecast_prob']}%")
+                st.write(f"24h Actual: {site_data['precipitation']['actual_24h']} IN")
+                
+            with detail_col2:
+                st.write("**Lightning Risk Assessment**")
+                st.write(f"Status: {site_data['lightning']['forecast']}")
+                st.write(f"Recent Activity: {site_data['lightning']['recent_strikes_50mi']} strikes")
         
-        # Historical precipitation chart
-        if not history.empty and 'date' in history.columns:
-            st.subheader("7-Day Precipitation History")
-            chart_data = history.tail(7).set_index('date')['precip_actual']
-            st.line_chart(chart_data, height=200)
+        with radar_col:
+            st.markdown("**Live Radar**")
+            st.markdown("**Wilson, NC**")
+            
+            # Compact radar for Wilson area - focused view
+            wilson_radar = """
+            <div class="radar-container" style="height: 100%;">
+                <iframe width="100%" height="700" 
+                src="https://embed.windy.com/embed2.html?lat=35.726&lon=-77.916&detailLat=35.726&detailLon=-77.916&width=300&height=700&zoom=10&level=surface&overlay=radar&product=ecmwf&menu=&message=&marker=true&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=mph&metricTemp=%C2%B0F&radarRange=-1" 
+                frameborder="0"></iframe>
+            </div>
+            """
+            st.components.v1.html(wilson_radar, height=720)
     
     # === GRADING TAB ===
     with tab_grading:
