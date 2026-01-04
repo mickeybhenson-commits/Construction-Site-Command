@@ -2,13 +2,14 @@ import streamlit as st
 import json
 import pandas as pd
 import datetime as dt
+import time
 from pathlib import Path
 from streamlit_autorefresh import st_autorefresh 
 
 # --- 1. ARCHITECTURAL CONFIG & CSS ---
 st.set_page_config(page_title="Wayne Brothers | Universal Command", layout="wide")
 
-# 5-Minute Professional Sync
+# 5-Minute Professional Sync (300,000 ms)
 st_autorefresh(interval=300000, key="datarefresh")
 
 def apply_universal_command_styling():
@@ -20,17 +21,12 @@ def apply_universal_command_styling():
         .stApp {{ background-image: url("{bg_url}"); background-attachment: fixed; background-size: cover; font-family: 'Inter', sans-serif; }}
         .stApp:before {{ content: ""; position: fixed; inset: 0; background: radial-gradient(circle at center, rgba(0,0,0,0.88), rgba(0,0,0,0.97)); z-index: 0; }}
         section.main {{ position: relative; z-index: 1; }}
-
         .exec-header {{ margin-bottom: 30px; border-left: 10px solid #CC0000; padding-left: 25px; }}
         .exec-title {{ font-size: 3.8em; font-weight: 900; letter-spacing: -2px; line-height: 1; color: #FFFFFF; margin: 0; }}
-        .exec-subtitle {{ font-size: 1.5em; color: #AAAAAA; text-transform: uppercase; letter-spacing: 2px; margin-top: 5px; }}
-        
         .report-section {{ background: rgba(15, 15, 20, 0.9); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 25px; margin-bottom: 20px; }}
         .directive-header {{ color: #CC0000; font-weight: 900; text-transform: uppercase; font-size: 0.85em; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px; }}
-        
-        .status-pill {{ padding: 4px 12px; border-radius: 4px; font-weight: 900; font-size: 0.85em; text-transform: uppercase; }}
+        .sync-badge {{ background: rgba(255, 255, 255, 0.1); color: #00FFCC; padding: 5px 12px; border-radius: 50px; font-size: 0.8em; font-weight: 700; border: 1px solid #00FFCC; }}
         .alert-box {{ border-left: 5px solid #CC0000; padding: 15px; margin-bottom: 15px; background: rgba(204, 0, 0, 0.1); font-weight: 600; color: #FFD6D6; }}
-        .optimal-alert {{ border-left: 5px solid #0B8A1D; padding: 15px; margin-bottom: 15px; background: rgba(11, 138, 29, 0.1); font-weight: 600; color: #D6FFD6; }}
         </style>
         """, unsafe_allow_html=True)
 
@@ -52,23 +48,25 @@ def load_site_data():
 
 site_data, api_val, history_log = load_site_data()
 
-# --- 3. ANALYTICAL LOGIC LAYER ---
+# --- 3. LOGIC LAYER ---
 sed_pct = site_data.get('swppp', {}).get('sb3_sediment_pct', 25) 
 wind = site_data.get('crane_safety', {}).get('max_gust', 0)
 light = site_data.get('lightning', {}).get('recent_strikes_50mi', 0)
-rain_p = site_data.get('precipitation', {}).get('forecast_prob', 0)
+last_sync_time = dt.datetime.now().strftime('%H:%M:%S')
 
 if api_val < 0.30: status, s_color, s_msg = "OPTIMAL", "#0B8A1D", "Full grading operations authorized."
 elif api_val < 0.60: status, s_color, s_msg = "SATURATED", "#FFAA00", "Limit heavy hauling."
-elif api_val < 0.85: status, s_color, s_msg = "CRITICAL", "#FF6600", "Restrict mass grading."
+elif api_val < 0.85: status, s_color, s_msg = "CRITICAL", "#FF6600", "Protect subgrade. Restrict grading."
 else: status, s_color, s_msg = "RESTRICTED", "#B00000", "SITE CLOSED TO GRADING."
 
 # --- 4. EXECUTIVE COMMAND CENTER ---
 st.markdown(f"""
     <div class="exec-header">
-        <div class="exec-title">Wayne Brothers</div>
-        <div class="exec-subtitle">Johnson & Johnson Biologics Manufacturing Facility</div>
-        <div style="color:#777;">Wilson, NC | 148.2 Disturbed Acres</div>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div class="exec-title">Wayne Brothers</div>
+            <div class="sync-badge">SYSTEM ACTIVE • LAST UPDATED: {last_sync_time}</div>
+        </div>
+        <div style="font-size:1.5em; color:#AAA; text-transform:uppercase;">Johnson & Johnson Biologics Manufacturing Facility</div>
     </div>
 """, unsafe_allow_html=True)
 
@@ -78,41 +76,31 @@ with c_main:
     # 1. FIELD OPERATIONAL DIRECTIVE
     st.markdown(f'<div class="report-section" style="border-top: 6px solid {s_color};"><div class="directive-header">Field Operational Directive</div><h1 style="color:{s_color}; margin:0; font-size:3.5em;">{status}</h1><p style="font-size:1.3em;">{s_msg}</p></div>', unsafe_allow_html=True)
 
-    # 2. EXECUTIVE ADVISORY: SAFETY & INFRASTRUCTURE
+    # 2. EXECUTIVE ADVISORY (LOCKED FEATURES)
     st.markdown('<div class="report-section">', unsafe_allow_html=True)
     st.markdown('<div class="directive-header">Executive Advisory: Safety & Maintenance</div>', unsafe_allow_html=True)
-    
-    # Restored Silt Fence Warning
-    st.markdown(f'<div class="alert-box" style="border-color:#FFAA00;">⚠️ EROSION CONTROL: Monitoring stress at East Perimeter low points. Saturated soil weight is increasing pressure on perimeter integrity.</div>', unsafe_allow_html=True)
-    
-    # Safety Alerts (Lightning/Wind)
-    if light > 0: st.markdown(f'<div class="alert-box" style="border-color:#FFAA00;">⚡ LIGHTNING ALERT: {light} strikes detected within 50 miles. Monitor site.</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="alert-box" style="border-color:#FFAA00;">⚠️ EROSION CONTROL: Monitoring stress at East Perimeter low points.</div>', unsafe_allow_html=True)
+    if light > 0: st.markdown(f'<div class="alert-box" style="border-color:#FFAA00;">⚡ LIGHTNING: {light} strikes within 50 miles.</div>', unsafe_allow_html=True)
     if wind > 25: st.markdown(f'<div class="alert-box">🚨 CRANE ALERT: Gusts {wind} MPH. STOP LIFTS.</div>', unsafe_allow_html=True)
-    
-    # Basin Maintenance Directive
-    if sed_pct >= 25: st.markdown(f'<div class="optimal-alert">CMD DIRECTIVE: Basin SB3 at {sed_pct}% sediment. Status is {status}. Empty basin immediately while dry to restore capacity.</div>', unsafe_allow_html=True)
-    
-    if rain_p > 50: st.markdown(f'<div class="alert-box">🌧️ STORM HEADS-UP: {rain_p}% Prob. Prep 148.2-acre tract for runoff.</div>', unsafe_allow_html=True)
+    if sed_pct >= 25: st.markdown(f'<div style="border-left:5px solid #0B8A1D; padding:15px; background:rgba(11,138,29,0.1); color:#D6FFD6; font-weight:600;">CMD DIRECTIVE: Basin SB3 at {sed_pct}% sediment. Status is {status}. Empty basin immediately while dry.</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # 3. INTERACTIVE RADAR SURVEILLANCE
-    st.components.v1.html(f"""<iframe width="100%" height="400" src="https://embed.windy.com/embed2.html?lat=35.726&lon=-77.916&zoom=9&level=surface&overlay=radar" frameborder="0" style="border-radius:8px;"></iframe>""", height=410)
+    # 3. CONTINUOUS LOOP RADAR
+    st.components.v1.html(f"""<iframe width="100%" height="450" src="https://embed.windy.com/embed2.html?lat=35.726&lon=-77.916&zoom=9&level=surface&overlay=radar&product=radar&calendar=now" frameborder="0" style="border-radius:8px;"></iframe>""", height=460)
 
 with c_metrics:
-    # 4. SITE ANALYTICS SIDEBAR
+    # 4. SITE ANALYTICS (REAL-TIME)
     st.markdown('<div class="report-section">', unsafe_allow_html=True)
-    st.markdown('<div class="directive-header">Operational Metrics</div>', unsafe_allow_html=True)
+    st.markdown('<div class="directive-header">Analytical Metrics</div>', unsafe_allow_html=True)
     st.metric("Soil Moisture (API)", api_val)
     st.metric("Basin SB3 Capacity", f"{site_data.get('swppp', {}).get('sb3_capacity_pct', 58)}%")
     st.metric("Sediment Accumulation", f"{sed_pct}%")
     st.metric("Max Wind Gust", f"{wind} MPH")
     st.metric("Lightning (50mi)", light)
-    st.caption(f"Last Refresh: {dt.datetime.now().strftime('%H:%M:%S')}")
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # 5. WORKABILITY HISTORY LOG
+    # 5. STATUS HISTORY LOG
     st.markdown('<div class="report-section">', unsafe_allow_html=True)
-    st.markdown('<div class="directive-header">Status History Log</div>', unsafe_allow_html=True)
+    st.markdown('<div class="directive-header">Workability History Log</div>', unsafe_allow_html=True)
     if not history_log.empty: st.dataframe(history_log, hide_index=True, use_container_width=True)
-    else: st.write("Initializing historical log...")
     st.markdown('</div>', unsafe_allow_html=True)
