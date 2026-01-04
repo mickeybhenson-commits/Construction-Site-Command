@@ -45,10 +45,10 @@ def load_site_data():
 
 site_data, api_val, history_log = load_site_data()
 
-# --- 3. ANALYTICAL LOGIC (ALL ANALYZED METRICS) ---
-sed_pct = site_data.get('swppp', {}).get('sb3_sediment_pct', 25) # Tracked at 25%
+# --- 3. ANALYTICAL LOGIC LAYER ---
+sed_pct = site_data.get('swppp', {}).get('sb3_sediment_pct', 25) 
 wind = site_data.get('crane_safety', {}).get('max_gust', 0)
-light = site_data.get('lightning', {}).get('recent_strikes_50mi', 0)
+light = site_data.get('lightning', {}).get('recent_strikes_50mi', 0) # Lightning logic
 rain_p = site_data.get('precipitation', {}).get('forecast_prob', 0)
 
 if api_val < 0.30: status, s_color, s_msg = "OPTIMAL", "#0B8A1D", "Full grading operations authorized."
@@ -68,21 +68,24 @@ st.markdown(f"""
 c_main, c_metrics = st.columns([2, 1])
 
 with c_main:
-    # 1. PRIMARY OPERATIONAL DIRECTIVE
+    # 1. FIELD OPERATIONAL DIRECTIVE
     st.markdown(f'<div class="report-section" style="border-top: 6px solid {s_color};"><div class="directive-header">Field Operational Directive</div><h1 style="color:{s_color}; margin:0; font-size:3.5em;">{status}</h1><p style="font-size:1.3em;">{s_msg}</p></div>', unsafe_allow_html=True)
 
-    # 2. FIXED MAINTENANCE ADVISORY (Always visible if sediment > 25%)
+    # 2. EXECUTIVE ADVISORY: SAFETY & INFRASTRUCTURE
     st.markdown('<div class="report-section">', unsafe_allow_html=True)
-    st.markdown('<div class="directive-header">Executive Advisory: Basin Maintenance & Safety</div>', unsafe_allow_html=True)
+    st.markdown('<div class="directive-header">Executive Advisory: Safety & Maintenance</div>', unsafe_allow_html=True)
     
-    if sed_pct >= 50:
-        st.markdown(f'<div class="alert-box">🚨 LEGAL CRITICAL: Basin SB3 sediment at {sed_pct}%. Immediate clean-out required per NCDENR standards.</div>', unsafe_allow_html=True)
-    elif sed_pct >= 25:
-        # Pinned directive to clean while status is OPTIMAL
+    # Prioritize Safety Alerts (Wind/Lightning)
+    if light > 0:
+        st.markdown(f'<div class="alert-box" style="border-color:#FFAA00;">⚡ LIGHTNING ALERT: {light} strikes detected within 50 miles. Monitor crew proximity.</div>', unsafe_allow_html=True)
+    if wind > 25: 
+        st.markdown(f'<div class="alert-box">🚨 CRANE ALERT: Gusts {wind} MPH. STOP LIFTS immediately.</div>', unsafe_allow_html=True)
+    
+    # Basin Maintenance
+    if sed_pct >= 25:
         st.markdown(f'<div class="optimal-alert">CMD DIRECTIVE: Basin SB3 at {sed_pct}% sediment. Status is {status}. Empty basin immediately to restore capacity while dry.</div>', unsafe_allow_html=True)
     
-    if wind > 25: st.markdown(f'<div class="alert-box">🚨 CRANE: Gusts {wind} MPH. STOP LIFTS.</div>', unsafe_allow_html=True)
-    if rain_p > 50: st.markdown(f'<div class="alert-box">🌧️ STORM: {rain_p}% Prob. Prep 148.2-acre perimeter for runoff event.</div>', unsafe_allow_html=True)
+    if rain_p > 50: st.markdown(f'<div class="alert-box">🌧️ STORM HEADS-UP: {rain_p}% Prob. Prep 148.2-acre tract for runoff event.</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
     # 3. INTERACTIVE RADAR
@@ -91,15 +94,16 @@ with c_main:
 with c_metrics:
     # 4. SITE ANALYTICS
     st.markdown('<div class="report-section">', unsafe_allow_html=True)
-    st.markdown('<div class="directive-header">Analytical Metrics</div>', unsafe_allow_html=True)
+    st.markdown('<div class="directive-header">Operational Metrics</div>', unsafe_allow_html=True)
     st.metric("Soil Moisture (API)", api_val)
     st.metric("Basin SB3 Capacity", f"{site_data.get('swppp', {}).get('sb3_capacity_pct', 58)}%")
     st.metric("Sediment Accumulation", f"{sed_pct}%")
     st.metric("Max Wind Gust", f"{wind} MPH")
+    st.metric("Lightning (50mi)", light)
     st.caption(f"Last Sync: {dt.datetime.now().strftime('%H:%M:%S')}")
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # 5. HISTORY LOG (Fixed display)
+    # 5. HISTORY LOG
     st.markdown('<div class="report-section">', unsafe_allow_html=True)
     st.markdown('<div class="directive-header">Workability History Log</div>', unsafe_allow_html=True)
     if not history_log.empty: st.dataframe(history_log, hide_index=True, use_container_width=True)
