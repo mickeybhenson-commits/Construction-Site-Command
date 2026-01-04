@@ -13,40 +13,19 @@ def apply_industrial_premium_styling():
         f"""
         <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-        
-        .stApp {{ 
-            background-image: url("{bg_url}"); 
-            background-attachment: fixed; 
-            background-size: cover; 
-            font-family: 'Inter', sans-serif;
-        }}
-        .stApp:before {{ 
-            content: ""; position: fixed; inset: 0; 
-            background: radial-gradient(circle at center, rgba(0,0,0,0.85), rgba(0,0,0,0.98)); 
-            z-index: 0; 
-        }}
+        .stApp {{ background-image: url("{bg_url}"); background-attachment: fixed; background-size: cover; font-family: 'Inter', sans-serif; }}
+        .stApp:before {{ content: ""; position: fixed; inset: 0; background: radial-gradient(circle at center, rgba(0,0,0,0.85), rgba(0,0,0,0.98)); z-index: 0; }}
         section.main {{ position: relative; z-index: 1; }}
 
-        /* Professional Header block */
-        .exec-header {{ margin-bottom: 40px; border-left: 8px solid #CC0000; padding-left: 25px; }}
-        .exec-title {{ font-size: 3.5em; font-weight: 900; letter-spacing: -2px; line-height: 1; color: #FFFFFF; margin: 0; }}
-        .exec-subtitle {{ font-size: 1.5em; color: #AAAAAA; font-weight: 400; margin-top: 5px; text-transform: uppercase; letter-spacing: 2px; }}
-        .exec-location {{ font-size: 1.1em; color: #777777; margin-top: 2px; }}
+        /* Executive Header */
+        .exec-header {{ margin-bottom: 30px; border-left: 8px solid #CC0000; padding-left: 25px; }}
+        .exec-title {{ font-size: 3.2em; font-weight: 900; letter-spacing: -2px; line-height: 1; color: #FFFFFF; margin: 0; }}
+        .exec-subtitle {{ font-size: 1.4em; color: #AAAAAA; text-transform: uppercase; letter-spacing: 2px; margin-top: 5px; }}
 
-        /* Directive & Risk Cards */
-        .directive-container {{
-            background: rgba(20, 20, 25, 0.85);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            padding: 30px;
-            margin-bottom: 30px;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
-        }}
-        .directive-label {{ font-weight: 900; text-transform: uppercase; letter-spacing: 1px; color: #CC0000; margin-bottom: 15px; font-size: 0.9em; }}
-        
-        .metric-box {{ text-align: center; padding: 20px; border-right: 1px solid rgba(255,255,255,0.1); }}
-        .metric-label {{ color: #777; font-size: 0.8em; text-transform: uppercase; font-weight: 700; }}
-        .metric-value {{ font-size: 2.2em; font-weight: 900; color: #FFF; }}
+        /* Report & Directive Containers */
+        .report-section {{ background: rgba(20, 20, 25, 0.85); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 25px; margin-bottom: 25px; }}
+        .directive-header {{ color: #CC0000; font-weight: 900; text-transform: uppercase; font-size: 0.9em; margin-bottom: 15px; }}
+        .risk-item {{ border-left: 4px solid #CC0000; padding-left: 15px; margin-bottom: 15px; background: rgba(204, 0, 0, 0.05); padding-top: 10px; padding-bottom: 10px; }}
         </style>
         """, unsafe_allow_html=True)
 
@@ -69,73 +48,64 @@ site_data, api_val = load_digital_twin()
 
 # --- 3. ANALYTICAL LOGIC ---
 if api_val < 0.30:
-    status, color, grading_rec = "Optimal", "#0B8A1D", "Soil stability is maximum. Unrestricted grading operations authorized."
+    status, color, grading_rec = "OPTIMAL", "#0B8A1D", "Full grading operations authorized. Soil stability is high."
 elif api_val < 0.60:
-    status, color, grading_rec = "Saturated", "#FFAA00", "Soil moisture elevated. Hauling restricted to stabilized access roads."
+    status, color, grading_rec = "SATURATED", "#FFAA00", "Limit heavy hauling to stabilized roads to prevent subgrade damage."
 elif api_val < 0.85:
-    status, color, grading_rec = "Critical", "#FF6600", "High rutting risk. Grading restricted to prevent subgrade damage."
+    status, color, grading_rec = "CRITICAL", "#FF6600", "Restrict mass grading to protect soil integrity."
 else:
-    status, color, grading_rec = "Restricted", "#B00000", "SITE CLOSED TO GRADING. Operations suspended for soil structure defense."
+    status, color, grading_rec = "RESTRICTED", "#B00000", "SITE CLOSED TO GRADING. Earthwork operations suspended to defend soil structure."
 
 # --- 4. EXECUTIVE INTERFACE ---
 
-# High-Tier Header
+# Header block
 st.markdown(f"""
     <div class="exec-header">
         <div class="exec-title">Wayne Brothers</div>
         <div class="exec-subtitle">Johnson & Johnson Biologics Manufacturing Facility</div>
-        <div class="exec-location">Wilson, North Carolina | 148.2 Disturbed Acres</div>
+        <div style="color:#777;">Wilson, North Carolina | 148.2 Disturbed Acres</div>
     </div>
 """, unsafe_allow_html=True)
 
-# Main Dashboard Grid
-col_main, col_side = st.columns([2, 1])
+# THE MORNING REPORT SECTION
+col_left, col_right = st.columns([2, 1])
 
-with col_main:
-    # Top-Level Directives
-    st.markdown(f"""
-        <div class="directive-container" style="border-top: 5px solid {color};">
-            <div class="directive-label">Field Operational Directive</div>
-            <h2 style="margin:0; color:{color}; font-weight:900;">STATUS: {status.upper()}</h2>
-            <p style="font-size:1.2em; margin-top:10px; color:#EEE;">{grading_rec}</p>
-        </div>
-    """, unsafe_allow_html=True)
+with col_left:
+    st.markdown('<div class="report-section">', unsafe_allow_html=True)
+    st.markdown('<div class="directive-header">Field Operational Directive</div>', unsafe_allow_html=True)
+    st.markdown(f"<h1 style='color:{color}; margin:0;'>STATUS: {status}</h1>", unsafe_allow_html=True)
+    st.write(f"**Directive:** {grading_rec}")
+    st.write(f"**Authorized Activity:** Restricted to emergency erosion control and infrastructure maintenance.")
+    st.markdown("</div>", unsafe_allow_html=True)
 
-    # Predictive Intelligence Section
-    st.markdown("### Predictive Environmental Risk")
-    st.components.v1.html(f"""
-        <iframe width="100%" height="400" 
-            src="https://embed.windy.com/embed2.html?lat=35.726&lon=-77.916&zoom=9&level=surface&overlay=radar&metricWind=mph&metricTemp=%C2%B0F" 
-            frameborder="0" style="border-radius:8px;"></iframe>
-    """, height=410)
-
-with col_side:
-    # Critical SWPPP Metrics
-    st.markdown("### Compliance Analytics")
-    st.markdown(f"""
-        <div class="directive-container">
-            <div class="directive-label">Sediment Basin SB3</div>
-            <div style="font-size: 2.5em; font-weight:900;">{site_data['swppp']['sb3_capacity_pct']}%</div>
-            <div style="color:#777; margin-bottom:15px;">CAPACITY UTILIZED</div>
-            <div class="metric-label">Available Freeboard</div>
-            <div style="font-size:1.5em; font-weight:700;">{site_data['swppp']['freeboard_feet']} FT</div>
-        </div>
-    """, unsafe_allow_html=True)
-
-    # Risk Forecast
-    if site_data['precipitation']['forecast_prob'] > 50:
-        st.error(f"STORM ALERT: {site_data['precipitation']['forecast_prob']}% probability of precipitation. Pre-storm stabilization required for 148.2-acre perimeter.")
+    st.markdown('<div class="report-section">', unsafe_allow_html=True)
+    st.markdown('<div class="directive-header">Predictive Future Impact Advisory (Heads-Up)</div>', unsafe_allow_html=True)
+    
+    # Logic for future heads-up
+    forecast_rain = site_data['precipitation'].get('forecast_prob', 0)
+    if forecast_rain > 50:
+        st.markdown(f"""
+            <div class="risk-item"><strong>STORM IMPACT:</strong> Incoming rain on saturated soil ({api_val}) will maintain RESTRICTED status for 48-72h.</div>
+            <div class="risk-item"><strong>SWPPP ALERT:</strong> Basin SB3 risk of overtopping. Proactive pump-out recommended.</div>
+            <div class="risk-item"><strong>INFRASTRUCTURE:</strong> Silt fence reinforcement required at East Perimeter low points.</div>
+        """, unsafe_allow_html=True)
     else:
-        st.success("Stable weather window detected for the next 24 hours.")
+        st.success("Stable weather window confirmed. No immediate operational impediments forecast.")
+    st.markdown("</div>", unsafe_allow_html=True)
 
-# Multi-Metric Footer Strip
-st.markdown("---")
-m_cols = st.columns(4)
-with m_cols[0]:
-    st.markdown(f'<div class="metric-box"><p class="metric-label">Soil Saturation (API)</p><p class="metric-value">{api_val}</p></div>', unsafe_allow_html=True)
-with m_cols[1]:
-    st.markdown(f'<div class="metric-box"><p class="metric-label">24H Rain Actual</p><p class="metric-value">{site_data["precipitation"]["actual_24h"]} IN</p></div>', unsafe_allow_html=True)
-with m_cols[2]:
-    st.markdown(f'<div class="metric-box"><p class="metric-label">Max Wind Gust</p><p class="metric-value">{site_data["crane_safety"]["max_gust"]} MPH</p></div>', unsafe_allow_html=True)
-with m_cols[3]:
-    st.markdown(f'<div class="metric-box" style="border:none;"><p class="metric-label">Lightning Threat</p><p class="metric-value">{site_data["lightning"]["forecast"]}</p></div>', unsafe_allow_html=True)
+with col_right:
+    st.markdown('<div class="report-section">', unsafe_allow_html=True)
+    st.markdown('<div class="directive-header">Operational Metrics</div>', unsafe_allow_html=True)
+    st.metric("Soil Moisture (API)", api_val)
+    st.metric("Rain Actual (24h)", f"{site_data['precipitation']['actual_24h']} IN")
+    st.metric("Basin SB3 Capacity", f"{site_data['swppp']['sb3_capacity_pct']}%")
+    st.metric("Crane/Wind Status", site_data['crane_safety']['status'])
+    st.markdown("</div>", unsafe_allow_html=True)
+
+# Radar Surveillance Section
+st.markdown("### Predictive Radar Surveillance")
+st.components.v1.html(f"""
+    <iframe width="100%" height="450" 
+        src="https://embed.windy.com/embed2.html?lat=35.726&lon=-77.916&zoom=9&level=surface&overlay=radar" 
+        frameborder="0" style="border-radius:8px;"></iframe>
+""", height=460)
