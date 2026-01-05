@@ -1,6 +1,6 @@
 {
   "project_name": "J&J LMDS - Wilson, NC",
-  "last_updated": "2026-01-04 14:51 EST",
+  "last_updated": "2026-01-05 12:29 EST",
   "precipitation": {
     "actual_24h": 0.0,
     "forecast_prob": 0,
@@ -13,8 +13,8 @@
     "silt_fence_integrity": "OPTIMAL"
   },
   "crane_safety": {
-    "wind_speed": 2,
-    "max_gust": 8,
+    "wind_speed": 1,
+    "max_gust": 11,
     "status": "GO"
   },
   "lightning": {
