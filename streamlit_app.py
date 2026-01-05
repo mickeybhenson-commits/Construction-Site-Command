@@ -5,8 +5,12 @@ import datetime as dt
 from pathlib import Path
 from streamlit_autorefresh import st_autorefresh 
 
-# --- 1. ARCHITECTURAL CONFIG & PREMIUM STYLING ---
-st.set_page_config(page_title="Wayne Brothers | Universal Command", layout="wide")
+# --- 1. ARCHITECTURAL CONFIG (TAB NAME ONLY UPDATE) ---
+st.set_page_config(
+    page_title="wb-jj-bmf-wilson-nc", 
+    page_icon="🏗️", 
+    layout="wide"
+)
 st_autorefresh(interval=300000, key="datarefresh") # 5-Min Sync
 
 def apply_universal_command_styling():
@@ -32,7 +36,8 @@ def apply_universal_command_styling():
 apply_universal_command_styling()
 
 # --- 2. CORE PROJECT CONSTANTS & TACTICAL MAPPING ---
-SITE_NAME = "Johnson & Johnson Biologics Manufacturing Facility"
+PROJECT_ID = "PROJECT VECTOR" 
+CLIENT_NAME = "Johnson & Johnson Biologics Manufacturing Facility"
 ACRES, COORDS = 148.2, "35.726, -77.916"
 API, SED_INCHES = 0.058, 18 
 
@@ -40,15 +45,15 @@ current_dt = dt.datetime.now()
 current_time = current_dt.strftime('%H:%M')
 current_day = current_dt.strftime('%a') 
 
-# Updated Tactical Logic: Tuesday now matches Monday's Priority Task
+# Locked Tactical Logic: Civil & Concrete Priorities
 tactical_map = {
     "Mon": {"status": "MAINTENANCE", "color": "#FFFF00", "hi": 55, "lo": 29, "pop": "10%", "in": "0.00\"", "task": "PRIORITY: Clean Basin SB3 + Inspect Silt Fences"},
     "Tue": {"status": "MAINTENANCE", "color": "#FFFF00", "hi": 60, "lo": 41, "pop": "10%", "in": "0.01\"", "task": "PRIORITY: Clean Basin SB3 + Inspect Silt Fences"},
-    "Wed": {"status": "CRITICAL", "color": "#FF0000", "hi": 67, "lo": 44, "pop": "80%", "in": "0.55\"", "task": "STORM ACTION: Runoff Surge Monitoring (High Risk)"},
+    "Wed": {"status": "CRITICAL", "color": "#FF0000", "hi": 67, "lo": 44, "pop": "80%", "in": "0.55\"", "task": "STORM ACTION: High Runoff Surge Monitoring"},
     "Thu": {"status": "RESTRICTED", "color": "#FF8C00", "hi": 64, "lo": 43, "pop": "40%", "in": "0.10\"", "task": "Saturated: Limit Heavy Hauling / Protect Subgrade"},
     "Fri": {"status": "CAUTION", "color": "#FFFF00", "hi": 71, "lo": 48, "pop": "20%", "in": "0.00\"", "task": "Drying: Monitor Sediment Trap Recovery"},
     "Sat": {"status": "RECOVERY", "color": "#00FF00", "hi": 71, "lo": 53, "pop": "20%", "in": "0.00\"", "task": "Recovery: Resume Standard Mass Grading"},
-    "Sun": {"status": "STABLE", "color": "#00FFCC", "hi": 53, "lo": 34, "pop": "20%", "in": "0.00\"", "task": "Stable: Reset for Monday"}
+    "Sun": {"status": "STABLE", "color": "#00FFCC", "hi": 53, "lo": 34, "pop": "20%", "in": "0.00\"", "task": "Stable: Site Security Check"}
 }
 today = tactical_map.get(current_day, tactical_map["Sun"])
 
@@ -56,10 +61,10 @@ today = tactical_map.get(current_day, tactical_map["Sun"])
 st.markdown(f"""
     <div class="exec-header">
         <div style="display: flex; justify-content: space-between; align-items: center;">
-            <div class="exec-title">Wayne Brothers</div>
+            <div class="exec-title">{PROJECT_ID}</div>
             <div class="sync-badge">SYSTEM ACTIVE • UPDATED: {current_time}</div>
         </div>
-        <div style="font-size:1.5em; color:#AAA; text-transform:uppercase;">{SITE_NAME}</div>
+        <div style="font-size:1.5em; color:#AAA; text-transform:uppercase;">{CLIENT_NAME}</div>
         <div style="color:#777; font-weight:700;">Wilson, NC | {ACRES} Disturbed Acres | {COORDS}</div>
     </div>
 """, unsafe_allow_html=True)
@@ -67,7 +72,7 @@ st.markdown(f"""
 c_main, c_metrics = st.columns([2, 1])
 
 with c_main:
-    # 1. DYNAMIC FIELD OPERATIONAL DIRECTIVE (LOCKS TO DAILY ADVISORY)
+    # 1. FIELD OPERATIONAL DIRECTIVE
     st.markdown(f"""
         <div class="report-section" style="border-top: 8px solid {today['color']};">
             <div class="directive-header">Field Operational Directive • {current_day.upper()} VALIDATION</div>
@@ -76,7 +81,7 @@ with c_main:
         </div>
     """, unsafe_allow_html=True)
 
-    # 2. EXECUTIVE ADVISORY: TACTICAL PRIORITY
+    # 2. EXECUTIVE ADVISORY
     st.markdown('<div class="report-section">', unsafe_allow_html=True)
     st.markdown('<div class="directive-header">Executive Advisory: Safety & Tactical Priority</div>', unsafe_allow_html=True)
     for day_key, d in tactical_map.items():
@@ -101,9 +106,8 @@ with c_main:
 with c_metrics:
     # 4. ANALYTICAL METRICS
     st.markdown('<div class="report-section">', unsafe_allow_html=True)
-    st.markdown('<div class="directive-header">Analytical Metrics</div>', unsafe_allow_html=True)
+    st.markdown('<div class="directive-header">Civil & Concrete Metrics</div>', unsafe_allow_html=True)
     st.metric("Soil Moisture (API)", API)
-    # Red status via inverse logic
     st.metric(label="Basin SB3 Capacity", value="58%", delta="CRITICAL WINDOW", delta_color="inverse")
     st.metric("Wind Speed", "7 MPH", delta="S Direction")
     st.metric("Temperature", "54°F")
@@ -111,7 +115,7 @@ with c_metrics:
     st.metric("NC DEQ NTU Limit", "50 NTU")
     st.markdown('</div>', unsafe_allow_html=True)
 
-# 5. RADAR AT BOTTOM
+# 5. SURVEILLANCE RADAR
 st.markdown('<div class="report-section">', unsafe_allow_html=True)
 st.markdown('<div class="directive-header">Surveillance Radar: Wilson County</div>', unsafe_allow_html=True)
 st.components.v1.html(f"""<iframe width="100%" height="450" src="https://embed.windy.com/embed2.html?lat=35.726&lon=-77.916&zoom=9&level=surface&overlay=radar" frameborder="0" style="border-radius:8px;"></iframe>""", height=460)
