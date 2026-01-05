@@ -5,9 +5,9 @@ import datetime as dt
 from pathlib import Path
 from streamlit_autorefresh import st_autorefresh 
 
-# --- 1. ARCHITECTURAL CONFIG (TAB NAME ONLY UPDATE) ---
+# --- 1. ARCHITECTURAL CONFIG (TAB NAME UPDATED) ---
 st.set_page_config(
-    page_title="wb-jj-bmf-wilson-nc", 
+    page_title="Wayne Brothers - JJ BMF", 
     page_icon="🏗️", 
     layout="wide"
 )
@@ -35,8 +35,8 @@ def apply_universal_command_styling():
 
 apply_universal_command_styling()
 
-# --- 2. CORE PROJECT CONSTANTS & TACTICAL MAPPING ---
-PROJECT_ID = "PROJECT VECTOR" 
+# --- 2. CORE PROJECT CONSTANTS & TACTICAL MAPPING (TITLE UPDATED) ---
+PROJECT_ID = "WAYNE BROTHERS" 
 CLIENT_NAME = "Johnson & Johnson Biologics Manufacturing Facility"
 ACRES, COORDS = 148.2, "35.726, -77.916"
 API, SED_INCHES = 0.058, 18 
@@ -45,7 +45,7 @@ current_dt = dt.datetime.now()
 current_time = current_dt.strftime('%H:%M')
 current_day = current_dt.strftime('%a') 
 
-# Locked Tactical Logic: Civil & Concrete Priorities
+# Tactical Logic: Mon/Tue Maintenance Focus
 tactical_map = {
     "Mon": {"status": "MAINTENANCE", "color": "#FFFF00", "hi": 55, "lo": 29, "pop": "10%", "in": "0.00\"", "task": "PRIORITY: Clean Basin SB3 + Inspect Silt Fences"},
     "Tue": {"status": "MAINTENANCE", "color": "#FFFF00", "hi": 60, "lo": 41, "pop": "10%", "in": "0.01\"", "task": "PRIORITY: Clean Basin SB3 + Inspect Silt Fences"},
@@ -88,9 +88,9 @@ with c_main:
         st.markdown(f"<div style='font-size:0.85em; margin-bottom:4px;'>• <b>{day_key}</b> ({d['hi']}°/{d['lo']}°): <span style='color:{d['color']}; font-weight:700;'>{d['task']}</span></div>", unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # 3. 7-DAY WEATHER OUTLOOK
+    # 3. 7-DAY WEATHER OUTLOOK (NWS/METEO HYBRID)
     st.markdown('<div class="report-section">', unsafe_allow_html=True)
-    st.markdown('<div class="directive-header">7-Day Weather Outlook (NWS/Meteo Hybrid)</div>', unsafe_allow_html=True)
+    st.markdown('<div class="directive-header">7-Day Weather Outlook</div>', unsafe_allow_html=True)
     f_cols = st.columns(7)
     for i, (day_key, d) in enumerate(tactical_map.items()):
         f_cols[i].markdown(f"""
