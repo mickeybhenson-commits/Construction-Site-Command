@@ -5,7 +5,7 @@ import datetime as dt
 from pathlib import Path
 from streamlit_autorefresh import st_autorefresh 
 
-# --- 1. ARCHITECTURAL CONFIG (TAB NAME UPDATED) ---
+# --- 1. ARCHITECTURAL CONFIG ---
 st.set_page_config(
     page_title="Wayne Brothers - JJ BMF", 
     page_icon="🏗️", 
@@ -35,7 +35,7 @@ def apply_universal_command_styling():
 
 apply_universal_command_styling()
 
-# --- 2. CORE PROJECT CONSTANTS & TACTICAL MAPPING (TITLE UPDATED) ---
+# --- 2. CORE PROJECT CONSTANTS & TACTICAL MAPPING ---
 PROJECT_ID = "WAYNE BROTHERS" 
 CLIENT_NAME = "Johnson & Johnson Biologics Manufacturing Facility"
 ACRES, COORDS = 148.2, "35.726, -77.916"
@@ -45,7 +45,7 @@ current_dt = dt.datetime.now()
 current_time = current_dt.strftime('%H:%M')
 current_day = current_dt.strftime('%a') 
 
-# Tactical Logic: Mon/Tue Maintenance Focus
+# Locked Tactical Logic: Mon/Tue Maintenance Focus
 tactical_map = {
     "Mon": {"status": "MAINTENANCE", "color": "#FFFF00", "hi": 55, "lo": 29, "pop": "10%", "in": "0.00\"", "task": "PRIORITY: Clean Basin SB3 + Inspect Silt Fences"},
     "Tue": {"status": "MAINTENANCE", "color": "#FFFF00", "hi": 60, "lo": 41, "pop": "10%", "in": "0.01\"", "task": "PRIORITY: Clean Basin SB3 + Inspect Silt Fences"},
@@ -72,7 +72,6 @@ st.markdown(f"""
 c_main, c_metrics = st.columns([2, 1])
 
 with c_main:
-    # 1. FIELD OPERATIONAL DIRECTIVE
     st.markdown(f"""
         <div class="report-section" style="border-top: 8px solid {today['color']};">
             <div class="directive-header">Field Operational Directive • {current_day.upper()} VALIDATION</div>
@@ -81,14 +80,12 @@ with c_main:
         </div>
     """, unsafe_allow_html=True)
 
-    # 2. EXECUTIVE ADVISORY
     st.markdown('<div class="report-section">', unsafe_allow_html=True)
     st.markdown('<div class="directive-header">Executive Advisory: Safety & Tactical Priority</div>', unsafe_allow_html=True)
     for day_key, d in tactical_map.items():
         st.markdown(f"<div style='font-size:0.85em; margin-bottom:4px;'>• <b>{day_key}</b> ({d['hi']}°/{d['lo']}°): <span style='color:{d['color']}; font-weight:700;'>{d['task']}</span></div>", unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # 3. 7-DAY WEATHER OUTLOOK (NWS/METEO HYBRID)
     st.markdown('<div class="report-section">', unsafe_allow_html=True)
     st.markdown('<div class="directive-header">7-Day Weather Outlook</div>', unsafe_allow_html=True)
     f_cols = st.columns(7)
@@ -104,7 +101,6 @@ with c_main:
     st.markdown('</div>', unsafe_allow_html=True)
 
 with c_metrics:
-    # 4. ANALYTICAL METRICS
     st.markdown('<div class="report-section">', unsafe_allow_html=True)
     st.markdown('<div class="directive-header">Civil & Concrete Metrics</div>', unsafe_allow_html=True)
     st.metric("Soil Moisture (API)", API)
@@ -115,8 +111,9 @@ with c_metrics:
     st.metric("NC DEQ NTU Limit", "50 NTU")
     st.markdown('</div>', unsafe_allow_html=True)
 
-# 5. SURVEILLANCE RADAR
+# 5. SURVEILLANCE RADAR (AUTO-LOOP ENABLED)
 st.markdown('<div class="report-section">', unsafe_allow_html=True)
-st.markdown('<div class="directive-header">Surveillance Radar: Wilson County</div>', unsafe_allow_html=True)
-st.components.v1.html(f"""<iframe width="100%" height="450" src="https://embed.windy.com/embed2.html?lat=35.726&lon=-77.916&zoom=9&level=surface&overlay=radar" frameborder="0" style="border-radius:8px;"></iframe>""", height=460)
+st.markdown('<div class="directive-header">Live Surveillance Radar (Auto-Loop)</div>', unsafe_allow_html=True)
+# Added &radarLoop=1 to the source URL to start movement immediately
+st.components.v1.html(f"""<iframe width="100%" height="450" src="https://embed.windy.com/embed2.html?lat=35.726&lon=-77.916&zoom=9&level=surface&overlay=radar&radarLoop=1" frameborder="0" style="border-radius:8px;"></iframe>""", height=460)
 st.markdown('</div>', unsafe_allow_html=True)
