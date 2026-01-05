@@ -24,8 +24,8 @@ def apply_universal_command_styling():
         .report-section {{ background: rgba(15, 15, 20, 0.9); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 25px; margin-bottom: 20px; }}
         .directive-header {{ color: #CC0000; font-weight: 900; text-transform: uppercase; font-size: 0.85em; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px; }}
         .alert-box {{ border-left: 5px solid #CC0000; padding: 15px; margin-bottom: 15px; background: rgba(204, 0, 0, 0.1); font-weight: 600; color: #FFD6D6; }}
-        .optimal-alert {{ border-left: 5px solid #0B8A1D; padding: 15px; margin-bottom: 15px; background: rgba(11, 138, 29, 0.1); font-weight: 600; color: #D6FFD6; }}
         .forecast-card {{ text-align: center; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); }}
+        .amt-text {{ color: #AAAAAA; font-size: 0.9em; font-weight: 400; margin-top: 4px; display: block; }}
         </style>
         """, unsafe_allow_html=True)
 
@@ -85,7 +85,7 @@ with c_main:
     # 1. FIELD OPERATIONAL DIRECTIVE
     st.markdown(f'<div class="report-section" style="border-top: 6px solid {s_color};"><div class="directive-header">Field Operational Directive</div><h1 style="color:{s_color}; margin:0; font-size:3.5em;">{status}</h1><p style="font-size:1.3em;">{s_msg}</p></div>', unsafe_allow_html=True)
 
-    # 2. EXECUTIVE ADVISORY & TACTICAL SCHEDULE (LABELS REMOVED)
+    # 2. EXECUTIVE ADVISORY & TACTICAL SCHEDULE (DIRECTIVE REMOVED)
     st.markdown('<div class="report-section">', unsafe_allow_html=True)
     st.markdown('<div class="directive-header">Executive Advisory: Safety & Tactical Priority</div>', unsafe_allow_html=True)
     
@@ -95,7 +95,6 @@ with c_main:
         st.markdown(f"<div style='font-size:0.9em; margin-bottom:6px;'>• <b>{d['day']}</b>: <span style='color:{task_color}; font-weight:700;'>{d['task']}</span> ({d['amt']})</div>", unsafe_allow_html=True)
 
     if light > 0: st.markdown(f'<div class="alert-box" style="border-color:#FFAA00;">⚡ LIGHTNING: {light} strikes detected within 50 miles.</div>', unsafe_allow_html=True)
-    if sed_pct >= 25: st.markdown(f'<div class="optimal-alert">Basin SB3 is at {sed_pct}% sediment. Clean basin immediately while status is {status}.</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
     # 3. 7-DAY RAIN OUTLOOK
