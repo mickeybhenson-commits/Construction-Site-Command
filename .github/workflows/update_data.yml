@@ -1,12 +1,14 @@
-name: Daily SWPPP and Weather Update
+name: 30-Min Multi-Site Update
 
 on:
   schedule:
-    - cron: '0 12 * * *' # Runs at 7:00 AM EST (12:00 UTC) every day
-  workflow_dispatch:      # Allows you to manually trigger it via the Actions tab
+    # Runs every 30 minutes (Baseline)
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+    # This is your "Storm Button" - run it manually as often as you want during rain events
 
 jobs:
-  update-dashboard:
+  update-sites:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -20,9 +22,15 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install requests
 
-      - name: Run Update Script
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+      - name: Run Multi-Site Updater
         run: python scripts/updater.py
+
+      - name: Commit and Push Changes
+        run: |
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+          git add data/*.json
+          git commit -m "Site Update: Wilson & Charlotte" || exit 0
+          git push
