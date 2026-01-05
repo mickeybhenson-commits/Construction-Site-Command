@@ -11,7 +11,7 @@ st.set_page_config(
     page_icon="🏗️", 
     layout="wide"
 )
-st_autorefresh(interval=300000, key="datarefresh") # 5-Min Sync
+st_autorefresh(interval=300000, key="datarefresh") 
 
 def apply_universal_command_styling():
     bg_url = "https://raw.githubusercontent.com/mickeybhenson-commits/J-J-LMDS-WILSON-NC/main/image_12e160.png"
@@ -36,7 +36,7 @@ def apply_universal_command_styling():
 
 apply_universal_command_styling()
 
-# --- 2. CORE PROJECT CONSTANTS & TACTICAL MAPPING ---
+# --- 2. CORE PROJECT CONSTANTS ---
 PROJECT_ID = "WAYNE BROTHERS" 
 CLIENT_NAME = "Johnson & Johnson Biologics Manufacturing Facility"
 ACRES, COORDS = 148.2, "35.726, -77.916"
@@ -46,7 +46,6 @@ current_dt = dt.datetime.now()
 current_time = current_dt.strftime('%H:%M')
 current_day = current_dt.strftime('%a') 
 
-# Updated Tactical Logic: Added Humidity % for Civil & Concrete Planning
 tactical_map = {
     "Mon": {"status": "MAINTENANCE", "color": "#FFFF00", "hi": 55, "lo": 29, "pop": "10%", "in": "0.00\"", "hum": "55%", "task": "PRIORITY: Clean Basin SB3 + Inspect Silt Fences"},
     "Tue": {"status": "MAINTENANCE", "color": "#FFFF00", "hi": 60, "lo": 41, "pop": "10%", "in": "0.01\"", "hum": "58%", "task": "PRIORITY: Clean Basin SB3 + Inspect Silt Fences"},
@@ -58,27 +57,27 @@ tactical_map = {
 }
 today = tactical_map.get(current_day, tactical_map["Sun"])
 
-# --- 3. COMMAND CENTER UI ---
+# --- 3. UI LAYOUT ---
 st.markdown(f"""
     <div class="exec-header">
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <div class="exec-title">{PROJECT_ID}</div>
-            <div class="sync-badge">SYSTEM ACTIVE • UPDATED: {current_time}</div>
+            <div class="sync-badge">SYSTEM ACTIVE • {current_time}</div>
         </div>
         <div style="font-size:1.5em; color:#AAA; text-transform:uppercase;">{CLIENT_NAME}</div>
-        <div style="color:#777; font-weight:700;">Wilson, NC | {ACRES} Disturbed Acres | {COORDS}</div>
+        <div style="color:#777; font-weight:700;">Wilson, NC | {ACRES} Acres | {COORDS}</div>
     </div>
 """, unsafe_allow_html=True)
 
 c_main, c_metrics = st.columns([2, 1])
 
 with c_main:
-    # 1. FIELD OPERATIONAL DIRECTIVE
+    # 1. FIELD OPERATIONAL DIRECTIVE (WEATHER DATA REMOVED FROM TEXT)
     st.markdown(f"""
         <div class="report-section" style="border-top: 8px solid {today['color']};">
             <div class="directive-header">Field Operational Directive • {current_day.upper()} VALIDATION</div>
             <h1 style="color: {today['color']}; margin: 0; font-size: 3.5em; letter-spacing: -2px;">{today['status']}</h1>
-            <p style="font-size: 1.3em; margin-top: 10px;"><b>{today['pop']} Prob / {today['in']} Rain:</b> {today['task']}</p>
+            <p style="font-size: 1.3em; margin-top: 10px;">{today['task']}</p>
         </div>
     """, unsafe_allow_html=True)
 
@@ -89,7 +88,7 @@ with c_main:
         st.markdown(f"<div style='font-size:0.85em; margin-bottom:4px;'>• <b>{day_key}</b>: <span style='color:{d['color']}; font-weight:700;'>{d['task']}</span> (Hum: {d['hum']})</div>", unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # 3. 7-DAY WEATHER OUTLOOK (NWS/METEO HYBRID)
+    # 3. 7-DAY WEATHER OUTLOOK
     st.markdown('<div class="report-section">', unsafe_allow_html=True)
     st.markdown('<div class="directive-header">7-Day Weather Outlook</div>', unsafe_allow_html=True)
     f_cols = st.columns(7)
@@ -110,7 +109,7 @@ with c_metrics:
     st.markdown('<div class="report-section">', unsafe_allow_html=True)
     st.markdown('<div class="directive-header">Civil & Concrete Metrics</div>', unsafe_allow_html=True)
     st.metric("Soil Moisture (API)", API)
-    st.metric(label="Basin SB3 Capacity", value="58%", delta="CRITICAL WINDOW", delta_color="inverse")
+    st.metric(label="Basin SB3 Capacity", value="58%", delta="CRITICAL", delta_color="inverse")
     st.metric("Wind Speed", "7 MPH", delta="S Direction")
     st.metric("Temperature", "54°F")
     st.metric("Humidity", "55%")
@@ -119,6 +118,5 @@ with c_metrics:
 
 # 5. SURVEILLANCE RADAR
 st.markdown('<div class="report-section">', unsafe_allow_html=True)
-st.markdown('<div class="directive-header">Live Surveillance Radar (Auto-Loop)</div>', unsafe_allow_html=True)
 st.components.v1.html(f"""<iframe width="100%" height="450" src="https://embed.windy.com/embed2.html?lat=35.726&lon=-77.916&zoom=9&level=surface&overlay=radar&radarLoop=1" frameborder="0" style="border-radius:8px;"></iframe>""", height=460)
 st.markdown('</div>', unsafe_allow_html=True)
