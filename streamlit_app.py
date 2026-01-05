@@ -40,7 +40,6 @@ API, SED_INCHES = 0.058, 18
 hist_report = {"period": "Nov-Dec 2025", "total_rain": "4.12\"", "est_silt_load": "64,800 cu ft", "depth_verify": "17.4 inches"}
 
 # --- 3. COMMAND CENTER UI ---
-# TIME LAYOUT UPDATED TO HH:MM
 current_time = dt.datetime.now().strftime('%H:%M')
 
 st.markdown(f"""
@@ -99,16 +98,15 @@ with c_main:
     st.markdown('</div>', unsafe_allow_html=True)
 
 with c_metrics:
+    # 5. ANALYTICAL METRICS (UPDATED)
     st.markdown('<div class="report-section">', unsafe_allow_html=True)
     st.markdown('<div class="directive-header">Analytical Metrics</div>', unsafe_allow_html=True)
     st.metric("Soil Moisture (API)", API)
-    
-    # "CRITICAL WINDOW" preserved in Red via inverse logic
     st.metric(label="Basin SB3 Capacity", value="58%", delta="CRITICAL WINDOW", delta_color="inverse")
-    
     st.metric("Sediment Accumulation", f"{SED_INCHES}\" (25%)")
-    st.metric("Temperature", "54°F", delta="Warmer than yesterday")
-    st.metric("Humidity", "55%", delta="-13%")
+    st.metric("Temperature", "54°F")
+    st.metric("Humidity", "55%")
+    st.metric("Wind Speed", "7 MPH", delta="S Direction")
     st.metric("NC DEQ NTU Limit", "50 NTU")
     st.markdown('</div>', unsafe_allow_html=True)
 
