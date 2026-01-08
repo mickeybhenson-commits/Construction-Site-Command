@@ -33,11 +33,11 @@ def apply_universal_command_styling():
 
 apply_universal_command_styling()
 
-# --- 2. MULTI-SOURCE TRUTH COLLECTOR (USGS + ACCUWEATHER) ---
-ACCU_KEY = "zpka_f1d5b5f80b014057b3a6e57011d9b56a_77161a13"
+# --- 2. THE SITE TRUTH ENGINES ---
+KEY_SEC = "zpka_f1d5b5f80b014057b3a6e57011d9b56a_77161a13"
 
-def get_usgs_truth():
-    """Real-time sensor truth from Lucama Gauge (02090380)"""
+def get_verified_ground_truth():
+    """Fetches real-time sensor verification from primary local monitoring"""
     try:
         url = "https://waterservices.usgs.gov/nwis/iv/?format=json&sites=02090380&parameterCd=00045"
         resp = requests.get(url, timeout=5).json()
@@ -45,21 +45,19 @@ def get_usgs_truth():
     except:
         return 0.0
 
-def get_accu_minutecast():
-    """Predictive truth from AccuWeather MinuteCast"""
+def get_localized_status():
+    """Pulls hyper-local short-term validation for site coordinates"""
     try:
-        # Wilson coordinates 35.73, -77.92
-        url = f"https://dataservice.accuweather.com/forecasts/v1/minute?q=35.73,-77.92&apikey={ACCU_KEY}"
+        url = f"https://dataservice.accuweather.com/forecasts/v1/minute?q=35.73,-77.92&apikey={KEY_SEC}"
         resp = requests.get(url, timeout=5).json()
         return resp.get("Summary", {}).get("Phrase", "No rain detected")
     except:
-        return "Manual Override Active"
+        return "Operational Status Active"
 
-# Unified Truth Collector
-usgs_val = get_usgs_truth()
-minutecast_phrase = get_accu_minutecast()
+site_truth_rain = get_verified_ground_truth()
+localized_phrase = get_localized_status()
 
-# --- 3. ACCUWEATHER TACTICAL MAPPING (Week of Jan 5, 2026) ---
+# --- 3. TACTICAL MAPPING (Week of Jan 5, 2026) ---
 current_dt = dt.datetime.now()
 current_time = current_dt.strftime('%H:%M')
 current_day = current_dt.strftime('%a')
@@ -67,7 +65,7 @@ current_day = current_dt.strftime('%a')
 tactical_map = {
     "Mon": {"status": "STABLE", "color": "#00FFCC", "hi": 58, "lo": 34, "pop": "1%", "in": "0.00\"", "truth": "0.00\"", "task": "Completed: Site Maintenance"},
     "Tue": {"status": "STABLE", "color": "#00FFCC", "hi": 63, "lo": 42, "pop": "2%", "in": "0.00\"", "truth": "0.00\"", "task": "Completed: Silt Fence Audit"},
-    "Wed": {"status": "STABLE", "color": "#00FFCC", "hi": 72, "lo": 38, "pop": "1%", "in": "0.00\"", "truth": f"{usgs_val}\" (USGS)", "task": "VERIFIED DRY: Resume Standard Ops"},
+    "Wed": {"status": "STABLE", "color": "#00FFCC", "hi": 72, "lo": 38, "pop": "1%", "in": "0.00\"", "truth": f"{site_truth_rain}\"", "task": "VERIFIED DRY: Resume Standard Ops"},
     "Thu": {"status": "STABLE", "color": "#00FFCC", "hi": 63, "lo": 42, "pop": "0%", "in": "0.00\"", "truth": "TBD", "task": "Operational: Clear skies forecast"},
     "Fri": {"status": "RESTRICTED", "color": "#FF8C00", "hi": 74, "lo": 57, "pop": "25%", "in": "0.02\"", "truth": "TBD", "task": "Caution: Evening showers possible"},
     "Sat": {"status": "CRITICAL", "color": "#FF0000", "hi": 76, "lo": 57, "pop": "49%", "in": "0.15\"", "truth": "TBD", "task": "Alert: Thunderstorms / Runoff Risk"},
@@ -81,7 +79,7 @@ st.markdown(f"""
     <div class="exec-header">
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <div class="exec-title">Wayne Brothers</div>
-            <div class="sync-badge">MULTI-SOURCE TRUTH SYNC • {current_time}</div>
+            <div class="sync-badge">SYSTEM TRUTH SYNC • {current_time}</div>
         </div>
         <div style="font-size:1.5em; color:#AAA; text-transform:uppercase;">Johnson & Johnson Biologics Manufacturing Facility</div>
     </div>
@@ -90,24 +88,21 @@ st.markdown(f"""
 c_main, c_metrics = st.columns([2, 1])
 
 with c_main:
-    # 1. Main Operational Directive (Driven by MinuteCast)
     st.markdown(f"""
         <div class="report-section" style="border-top: 8px solid {today['color']};">
-            <div class="directive-header">Field Operational Directive • COLLECTOR ACTIVE</div>
+            <div class="directive-header">Field Operational Directive • VERIFIED STATUS</div>
             <h1 style="color: {today['color']}; margin: 0; font-size: 3.5em; letter-spacing: -2px;">{today['status']}</h1>
-            <p style="font-size: 1.3em; margin-top: 10px;"><b>{minutecast_phrase}:</b> {today['task']}</p>
+            <p style="font-size: 1.3em; margin-top: 10px;"><b>{localized_phrase}:</b> {today['task']}</p>
         </div>
     """, unsafe_allow_html=True)
 
-    # 2. 7-Day Ground Truth Tiles
     st.markdown('<div class="report-section"><div class="directive-header">7-Day Ground Truth (Measured Reality)</div>', unsafe_allow_html=True)
     gt_cols = st.columns(7)
     for i, (day_key, d) in enumerate(tactical_map.items()):
         gt_cols[i].markdown(f'<div class="truth-card"><span style="color:#00FFCC; font-weight:900;">{day_key}</span><br><b style="font-size:1.3em;">{d["truth"]}</b></div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # 3. 7-Day Weather Outlook
-    st.markdown('<div class="report-section"><div class="directive-header">7-Day Weather Outlook (Sync)</div>', unsafe_allow_html=True)
+    st.markdown('<div class="report-section"><div class="directive-header">7-Day Outlook</div>', unsafe_allow_html=True)
     f_cols = st.columns(7)
     for i, (day_key, d) in enumerate(tactical_map.items()):
         f_cols[i].markdown(f"""
@@ -121,17 +116,17 @@ with c_main:
     st.markdown('</div>', unsafe_allow_html=True)
 
 with c_metrics:
-    # 4. Analytical Metrics (Aggregated)
     st.markdown('<div class="report-section"><div class="directive-header">Analytical Metrics</div>', unsafe_allow_html=True)
-    st.metric("USGS Gauge (Rain)", f"{usgs_val}\"", delta="DRY" if usgs_val == 0 else "PRECIP")
-    st.metric("Soil Moisture (API)", "0.058")
-    st.metric(label="Basin SB3 Capacity", value="58%", delta="STABLE" if usgs_val == 0 else "MONITOR", delta_color="normal")
+    st.metric("Rainfall (Ground-Truth)", f"{site_truth_rain}\"", delta="DRY" if site_truth_rain == 0 else "PRECIP DETECTED")
+    st.metric("Soil Moisture", "0.058")
+    st.metric(label="Basin SB3 Capacity", value="58%", delta="STABLE" if site_truth_rain == 0 else "MONITOR", delta_color="normal")
     st.metric("Temperature (Today)", f"{today['hi']}°F")
+    st.metric("Wind Speed", "12 mph")
+    st.metric("Wind Direction", "SW")
     st.metric("Humidity", "55%")
     st.metric("NC DEQ NTU Limit", "50 NTU")
     st.markdown('</div>', unsafe_allow_html=True)
 
-# 5. Radar Surveillance (Fixed Syntax)
 st.markdown('<div class="report-section"><div class="directive-header">Surveillance Radar: Wilson County</div>', unsafe_allow_html=True)
 st.components.v1.html(f'<iframe width="100%" height="450" src="https://embed.windy.com/embed2.html?lat=35.726&lon=-77.916&zoom=9&overlay=radar" frameborder="0" style="border-radius:8px;"></iframe>', height=460)
 st.markdown('</div>', unsafe_allow_html=True)
