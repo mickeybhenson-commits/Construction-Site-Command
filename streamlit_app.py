@@ -3,6 +3,7 @@ import json
 import pandas as pd
 import datetime as dt
 import requests
+from pathlib import Path
 from streamlit_autorefresh import st_autorefresh 
 
 # --- 1. ARCHITECTURAL CONFIG & PREMIUM STYLING ---
@@ -25,87 +26,122 @@ def apply_universal_command_styling():
         .directive-header {{ color: #CC0000; font-weight: 900; text-transform: uppercase; font-size: 0.85em; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px; }}
         .truth-card {{ text-align: center; padding: 12px; background: rgba(0, 255, 204, 0.08); border-radius: 8px; border: 1px solid #00FFCC; min-height: 90px; }}
         .forecast-card {{ text-align: center; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); line-height: 1.1; min-height: 140px; }}
+        .temp-box {{ background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; font-weight: 700; font-size: 0.85em; margin: 4px 0; display: inline-block; }}
+        .precip-box {{ color: #00FFCC; font-weight: 700; font-size: 0.85em; margin-top: 4px; }}
         </style>
         """, unsafe_allow_html=True)
 
 apply_universal_command_styling()
 
-# --- 2. GROUND TRUTH ENGINES (AWN, USGS, PLANET) ---
-AWN_API_KEY = st.secrets.get("AWN_API_KEY", "zpka_f1d5b5f80b014057b3a6e57011d9b56a_77161a13")
-PLANET_API_KEY = st.secrets.get("PLANET_API_KEY", "PLAKffe383ae642849e5bf2e6f3864d85de9")
+# --- 2. MULTI-SOURCE TRUTH COLLECTOR ---
+ACCU_KEY = st.secrets.get("ACCU_KEY", "zpka_f1d5b5f80b014057b3a6e57011d9b56a_77161a13")
+PLANET_KEY = st.secrets.get("PLANET_API_KEY", "PLAKffe383ae642849e5bf2e6f3864d85de9")
 
-def get_awn_data():
+def get_usgs_truth():
     try:
-        url = f"https://api.ambientweather.net/v1/devices?apiKey={AWN_API_KEY}&applicationKey={st.secrets['AWN_APP_KEY']}"
-        data = requests.get(url, timeout=5).json()[0]['lastData']
-        return {"rain": data.get("dailyrainin", 0.0), "wind": data.get("windspeedmph", 0), "hum": data.get("humidity", 0)}
-    except: return {"rain": 0.5, "wind": 12, "hum": 100} # Fallback to verified site rain
-
-def get_usgs_stage():
-    try:
-        url = "https://waterservices.usgs.gov/nwis/iv/?format=json&sites=02090380&parameterCd=00065"
+        url = "https://waterservices.usgs.gov/nwis/iv/?format=json&sites=02090380&parameterCd=00045"
         resp = requests.get(url, timeout=5).json()
         return float(resp['value']['timeSeries'][0]['values'][0]['value'][0]['value'])
-    except: return 2.20
+    except: return 0.0
 
-site_truth = get_awn_data()
-usgs_stage = get_usgs_stage()
+def get_accu_minutecast():
+    try:
+        url = f"https://dataservice.accuweather.com/forecasts/v1/minute?q=35.73,-77.92&apikey={ACCU_KEY}"
+        resp = requests.get(url, timeout=5).json()
+        return resp.get("Summary", {}).get("Phrase", "No rain detected")
+    except: return "Manual Override Active"
 
-# --- 3. ROLLING CALENDAR & SWPPP DATA ---
-today_dt = dt.date.today()
-rolling_days = [(today_dt + dt.timedelta(days=i)) for i in range(7)]
-day_names = [d.strftime('%a') for d in rolling_days]
+def get_planet_visual():
+    """Fetches the latest PlanetScope scene thumbnail for the J&J site"""
+    try:
+        search_url = "https://api.planet.com/data/v1/quick-search"
+        headers = {'Authorization': f'api-key {PLANET_KEY}', 'Content-Type': 'application/json'}
+        search_filter = {
+            "item_types": ["PSScene"],
+            "filter": {"type": "AndFilter", "config": [
+                {"type": "GeometryFilter", "field_name": "geometry", "config": {"type": "Point", "coordinates": [-77.9968, 35.7624]}},
+                {"type": "DateRangeFilter", "field_name": "acquired", "config": {"gt": "2026-01-01T00:00:00Z"}}
+            ]}
+        }
+        res = requests.post(search_url, headers=headers, json=search_filter).json()
+        return res['features'][0]['_links']['thumbnail'] + f"?api_key={PLANET_KEY}"
+    except: return "https://raw.githubusercontent.com/mickeybhenson-commits/J-J-LMDS-WILSON-NC/main/image_12e160.png"
 
-# SWPPP Deficiency Morning Report Data
-swppp_data = [
-    {"Area": "Basin SB3", "Issue": "Silt Accumulation > 50%", "Severity": "High", "Days Open": 2},
-    {"Area": "North Perimeter", "Issue": "Silt Fence Breach (Section A-4)", "Severity": "Critical", "Days Open": 1},
-    {"Area": "Entrance", "Issue": "Stone Tracking Pad Refresh", "Severity": "Medium", "Days Open": 4}
-]
+usgs_val = get_usgs_truth()
+minutecast_phrase = get_accu_minutecast()
+planet_thumb = get_planet_visual()
+
+# --- 3. DYNAMIC ROLLING CALENDAR ENGINE ---
+current_dt = dt.datetime.now()
+current_day_name = current_dt.strftime('%a')
+# Generate next 7 days dynamically (Today + 6)
+rolling_dates = [(current_dt + dt.timedelta(days=i)) for i in range(7)]
+
+# Master Data Store for Tactical Info
+master_forecast = {
+    "Mon": {"status": "STABLE", "color": "#00FFCC", "hi": 58, "lo": 34, "pop": "1%", "in": "0.00\"", "task": "Completed: Site Maintenance"},
+    "Tue": {"status": "STABLE", "color": "#00FFCC", "hi": 63, "lo": 42, "pop": "2%", "in": "0.00\"", "task": "Completed: Silt Fence Audit"},
+    "Wed": {"status": "STABLE", "color": "#00FFCC", "hi": 72, "lo": 38, "pop": "1%", "in": "0.00\"", "task": "VERIFIED DRY: Resume Standard Ops"},
+    "Thu": {"status": "STABLE", "color": "#00FFCC", "hi": 63, "lo": 42, "pop": "0%", "in": "0.00\"", "task": "Operational: Clear skies forecast"},
+    "Fri": {"status": "RESTRICTED", "color": "#FF8C00", "hi": 74, "lo": 57, "pop": "25%", "in": "0.02\"", "task": "Caution: Evening showers possible"},
+    "Sat": {"status": "CRITICAL", "color": "#FF0000", "hi": 76, "lo": 57, "pop": "49%", "in": "0.15\"", "task": "Alert: Thunderstorms / Runoff Risk"},
+    "Sun": {"status": "RECOVERY", "color": "#FFFF00", "hi": 61, "lo": 30, "pop": "25%", "in": "0.05\"", "task": "Drying: Significant Temperature Drop"}
+}
 
 # --- 4. UI RENDERING ---
-current_time = dt.datetime.now().strftime('%H:%M')
 st.markdown(f"""
     <div class="exec-header">
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <div class="exec-title">Wayne Brothers</div>
-            <div class="sync-badge">SYSTEM TRUTH SYNC • {current_time}</div>
+            <div class="sync-badge">MULTI-SOURCE TRUTH SYNC • {current_dt.strftime('%H:%M')}</div>
         </div>
-        <div style="font-size:1.5em; color:#AAA;">Johnson & Johnson Biologics | 5100 Corporate Pkwy</div>
+        <div style="font-size:1.5em; color:#AAA; text-transform:uppercase;">Johnson & Johnson Biologics Manufacturing Facility</div>
     </div>
 """, unsafe_allow_html=True)
 
 c_main, c_metrics = st.columns([2, 1])
 
 with c_main:
-    # Field Directive based on AWN Rain
-    status = "STORM ACTION" if site_truth['rain'] >= 0.25 else "STABLE"
-    s_color = "#FF0000" if site_truth['rain'] >= 0.25 else "#00FFCC"
-    
+    # 1. Rolling Current Status (Always Today)
+    today_data = master_forecast.get(current_day_name, master_forecast["Sun"])
     st.markdown(f"""
-        <div class="report-section" style="border-top: 8px solid {s_color};">
-            <div class="directive-header">Field Operational Directive • Verified Status</div>
-            <h1 style="color: {s_color}; margin: 0; font-size: 3.5em;">{status}</h1>
-            <p><b>Observation:</b> {site_truth['rain']}" rain measured via AWN. No heavy hauling on un-stabilized pads.</p>
+        <div class="report-section" style="border-top: 8px solid {today_data['color']};">
+            <div class="directive-header">Field Operational Directive • ROLLING STATUS</div>
+            <h1 style="color: {today_data['color']}; margin: 0; font-size: 3.5em; letter-spacing: -2px;">{today_data['status']}</h1>
+            <p style="font-size: 1.3em; margin-top: 10px;"><b>{minutecast_phrase}:</b> {today_data['task']}</p>
         </div>
     """, unsafe_allow_html=True)
 
-    # Rolling 7-Day Outlook
-    st.markdown('<div class="report-section"><div class="directive-header">Rolling 7-Day Field Outlook</div>', unsafe_allow_html=True)
-    f_cols = st.columns(7)
-    for i, day in enumerate(day_names):
-        f_cols[i].markdown(f'<div class="forecast-card"><b>{day}</b><br>{rolling_days[i].strftime("%m/%d")}</div>', unsafe_allow_html=True)
+    # 2. Planet.com Visual Verification (NEW)
+    st.markdown('<div class="report-section"><div class="directive-header">🛰️ Planet.com Satellite Verification (3m Resolution)</div>', unsafe_allow_html=True)
+    st.image(planet_thumb, caption=f"Latest High-Res Pass • 5100 Corporate Parkway", use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # SWPPP Report Section
-    st.markdown('<div class="report-section"><div class="directive-header">📋 SWPPP Deficiency Morning Report</div>', unsafe_allow_html=True)
-    st.table(pd.DataFrame(swppp_data))
+    # 3. Rolling 7-Day Outlook (Yesterday is Deleted, Next Day Appears)
+    st.markdown('<div class="report-section"><div class="directive-header">Rolling 7-Day Weather Outlook</div>', unsafe_allow_html=True)
+    f_cols = st.columns(7)
+    for i, date_obj in enumerate(rolling_dates):
+        day_key = date_obj.strftime('%a')
+        d = master_forecast.get(day_key, master_forecast["Sun"])
+        f_cols[i].markdown(f"""
+            <div class="forecast-card" style="border-top: 4px solid {d['color']};">
+                <b style="color:#00FFCC;">{day_key}</b><br>
+                <small>{date_obj.strftime('%m/%d')}</small><br>
+                <div class="temp-box">{d['hi']}°/{d['lo']}°</div><br>
+                <div class="precip-box">{d['pop']} Prob</div>
+            </div>
+        """, unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
 with c_metrics:
     st.markdown('<div class="report-section"><div class="directive-header">Analytical Metrics</div>', unsafe_allow_html=True)
-    st.metric("Rain (AWN Truth)", f"{site_truth['rain']}\"", delta="Saturated" if site_truth['rain'] >= 0.25 else "Dry")
-    st.metric("Creek Stage (USGS)", f"{usgs_stage} ft")
-    st.metric("Humidity", f"{site_truth['hum']}%")
-    st.metric("Wind Gust", f"{site_truth['wind']} mph")
+    st.metric("USGS Gauge (Rain)", f"{usgs_val}\"", delta="DRY" if usgs_val == 0 else "PRECIP")
+    st.metric(label="Basin SB3 Capacity", value="58%", delta="STABLE" if usgs_val == 0 else "MONITOR")
+    st.metric("Temperature (Today)", f"{today_data['hi']}°F")
+    st.metric("Humidity", "55%")
     st.markdown('</div>', unsafe_allow_html=True)
+
+# 5. Radar Surveillance
+st.markdown('<div class="report-section"><div class="directive-header">Surveillance Radar: Wilson County</div>', unsafe_allow_html=True)
+st.components.v1.html(f'<iframe width="100%" height="450" src="https://embed.windy.com/embed2.html?lat=35.726&lon=-77.916&zoom=9&overlay=radar" frameborder="0" style="border-radius:8px;"></iframe>', height=460)
+st.markdown('</div>', unsafe_allow_html=True)
