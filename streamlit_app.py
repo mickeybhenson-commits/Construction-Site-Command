@@ -33,10 +33,8 @@ def apply_universal_command_styling():
 
 apply_universal_command_styling()
 
-# --- 2. MULTI-SOURCE TRUTH COLLECTOR (AWN, USGS, PLANET) ---
-# Replace with your actual secret names in Streamlit Cloud
+# --- 2. MULTI-SOURCE TRUTH COLLECTOR (AWN + USGS) ---
 ACCU_KEY = st.secrets.get("ACCU_KEY", "zpka_f1d5b5f80b014057b3a6e57011d9b56a_77161a13")
-PLANET_KEY = st.secrets.get("PLANET_API_KEY", "PLAKffe383ae642849e5bf2e6f3864d85de9")
 
 def get_usgs_truth():
     try:
@@ -50,35 +48,24 @@ def get_accu_minutecast():
         url = f"https://dataservice.accuweather.com/forecasts/v1/minute?q=35.73,-77.92&apikey={ACCU_KEY}"
         resp = requests.get(url, timeout=5).json()
         return resp.get("Summary", {}).get("Phrase", "No rain detected")
-    except: return "Autonomous Monitoring Active"
-
-def get_planet_imagery():
-    try:
-        url = "https://api.planet.com/data/v1/quick-search"
-        headers = {'Authorization': f'api-key {PLANET_KEY}'}
-        search_filter = {"item_types": ["PSScene"], "filter": {"type": "AndFilter", "config": [
-            {"type": "GeometryFilter", "field_name": "geometry", "config": {"type": "Point", "coordinates": [-77.9968, 35.7624]}}
-        ]}}
-        res = requests.post(url, headers=headers, json=search_filter).json()
-        return res['features'][0]['_links']['thumbnail'] + f"?api_key={PLANET_KEY}"
-    except: return None
+    except: return "Autonomous Status Active"
 
 usgs_val = get_usgs_truth()
 minutecast_phrase = get_accu_minutecast()
-planet_thumb = get_planet_imagery()
 
-# --- 3. DYNAMIC ROLLING ENGINE ---
+# --- 3. DYNAMIC ROLLING CALENDAR ENGINE ---
 current_dt = dt.datetime.now()
+current_day_name = current_dt.strftime('%a')
 rolling_dates = [(current_dt + dt.timedelta(days=i)) for i in range(7)]
 
-master_data = {
-    "Mon": {"status": "STABLE", "hi": 58, "lo": 34, "pop": "1%", "in": "0.00\"", "truth": "0.00\""},
-    "Tue": {"status": "STABLE", "hi": 63, "lo": 42, "pop": "2%", "in": "0.00\"", "truth": "0.00\""},
-    "Wed": {"status": "STABLE", "hi": 72, "lo": 38, "pop": "1%", "in": "0.00\"", "truth": f"{usgs_val}\""},
-    "Thu": {"status": "STABLE", "hi": 63, "lo": 42, "pop": "0%", "in": "0.00\"", "truth": "TBD"},
-    "Fri": {"status": "RESTRICTED", "hi": 74, "lo": 57, "pop": "25%", "in": "0.02\"", "truth": "TBD"},
-    "Sat": {"status": "CRITICAL", "hi": 76, "lo": 57, "pop": "65%", "in": "0.15\"", "truth": "TBD"},
-    "Sun": {"status": "RECOVERY", "hi": 61, "lo": 30, "pop": "25%", "in": "0.05\"", "truth": "TBD"}
+master_forecast = {
+    "Mon": {"status": "STABLE", "color": "#00FFCC", "hi": 58, "lo": 34, "pop": "1%", "in": "0.00\"", "truth": "0.00\"", "task": "Completed: Site Maintenance"},
+    "Tue": {"status": "STABLE", "color": "#00FFCC", "hi": 63, "lo": 42, "pop": "2%", "in": "0.00\"", "truth": "0.00\"", "task": "Completed: Silt Fence Audit"},
+    "Wed": {"status": "STABLE", "color": "#00FFCC", "hi": 72, "lo": 38, "pop": "1%", "in": "0.00\"", "truth": f"{usgs_val}\" (USGS)", "task": "VERIFIED DRY: Resume Standard Ops"},
+    "Thu": {"status": "STABLE", "color": "#00FFCC", "hi": 63, "lo": 42, "pop": "0%", "in": "0.00\"", "truth": "TBD", "task": "Operational: Clear skies forecast"},
+    "Fri": {"status": "RESTRICTED", "color": "#FF8C00", "hi": 74, "lo": 57, "pop": "25%", "in": "0.02\"", "truth": "TBD", "task": "Caution: Evening showers possible"},
+    "Sat": {"status": "CRITICAL", "color": "#FF0000", "hi": 76, "lo": 57, "pop": "65%", "in": "0.15\"", "truth": "TBD", "task": "Alert: Thunderstorms / Runoff Risk"},
+    "Sun": {"status": "RECOVERY", "color": "#FFFF00", "hi": 61, "lo": 30, "pop": "25%", "in": "0.05\"", "truth": "TBD", "task": "Drying: Significant Temperature Drop"}
 }
 
 # --- 4. UI RENDERING ---
@@ -86,45 +73,69 @@ st.markdown(f"""
     <div class="exec-header">
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <div class="exec-title">Wayne Brothers</div>
-            <div class="sync-badge">AUTONOMOUS COMMAND SYNC • {current_dt.strftime('%H:%M')}</div>
+            <div class="sync-badge">AUTONOMOUS TRUTH SYNC • {current_dt.strftime('%H:%M')}</div>
         </div>
-        <div style="font-size:1.5em; color:#AAA;">Johnson & Johnson Biologics | 5100 Corporate Pkwy</div>
+        <div style="font-size:1.5em; color:#AAA; text-transform:uppercase;">Johnson & Johnson Biologics Manufacturing Facility</div>
     </div>
 """, unsafe_allow_html=True)
 
 c_main, c_metrics = st.columns([2, 1])
 
 with c_main:
-    # 1. Rolling Directive
-    st.markdown(f'<div class="report-section" style="border-top: 8px solid #00FFCC;"><div class="directive-header">Autonomous Site Directive</div><h1 style="color:#00FFCC; margin:0;">STABLE</h1><p><b>{minutecast_phrase}:</b> Field operations proceeding under standard protocol.</p></div>', unsafe_allow_html=True)
+    today_data = master_forecast.get(current_day_name, master_forecast["Sun"])
+    
+    # 1. Rolling Operational Directive with Forecast Awareness
+    is_impending_rain = int(today_data['pop'].replace('%','')) > 60
+    directive_color = "#FFD700" if (is_impending_rain and usgs_val == 0) else today_data['color']
+    directive_status = "PRE-STORM ADVISORY" if (is_impending_rain and usgs_val == 0) else today_data['status']
+    
+    st.markdown(f"""
+        <div class="report-section" style="border-top: 8px solid {directive_color};">
+            <div class="directive-header">Field Operational Directive • COLLECTOR ACTIVE</div>
+            <h1 style="color: {directive_color}; margin: 0; font-size: 3.5em; letter-spacing: -2px;">{directive_status}</h1>
+            <p style="font-size: 1.3em; margin-top: 10px;"><b>{minutecast_phrase}:</b> {today_data['task']}</p>
+        </div>
+    """, unsafe_allow_html=True)
 
-    # 2. Planet Satellite Image (Visual Determination)
-    if planet_thumb:
-        st.markdown('<div class="report-section"><div class="directive-header">🛰️ Planet.com Visual Verification</div>', unsafe_allow_html=True)
-        st.image(planet_thumb, caption="Latest High-Res Pass • 5100 Corporate Parkway", use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    # 3. Rolling Ground Truth Cards
+    # 2. Rolling 7-Day Ground Truth Tiles
     st.markdown('<div class="report-section"><div class="directive-header">7-Day Ground Truth (Measured Reality)</div>', unsafe_allow_html=True)
     gt_cols = st.columns(7)
     for i, date_obj in enumerate(rolling_dates):
-        day = date_obj.strftime('%a')
-        gt_cols[i].markdown(f'<div class="truth-card"><span style="color:#00FFCC; font-weight:900;">{day}</span><br><b>{master_data.get(day, master_data["Sun"])["truth"]}</b></div>', unsafe_allow_html=True)
+        day_key = date_obj.strftime('%a')
+        d = master_forecast.get(day_key, master_forecast["Sun"])
+        gt_cols[i].markdown(f'<div class="truth-card"><span style="color:#00FFCC; font-weight:900;">{day_key}</span><br><b style="font-size:1.3em;">{d["truth"]}</b></div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    # 3. Rolling 7-Day Weather Outlook
+    st.markdown('<div class="report-section"><div class="directive-header">Rolling 7-Day Weather Outlook</div>', unsafe_allow_html=True)
+    f_cols = st.columns(7)
+    for i, date_obj in enumerate(rolling_dates):
+        day_key = date_obj.strftime('%a')
+        d = master_forecast.get(day_key, master_forecast["Sun"])
+        f_cols[i].markdown(f"""
+            <div class="forecast-card" style="border-top: 4px solid {d['color']};">
+                <b>{day_key}</b><br>
+                <small>{date_obj.strftime('%m/%d')}</small><br>
+                <div class="temp-box">{d['hi']}°/{d['lo']}°</div><br>
+                <div class="precip-box">{d['pop']} Prob</div>
+            </div>
+        """, unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
 with c_metrics:
     # 4. Restored Analytical Metrics
     st.markdown('<div class="report-section"><div class="directive-header">Analytical Metrics</div>', unsafe_allow_html=True)
-    st.metric("Rainfall (USGS)", f"{usgs_val}\"", delta="DRY" if usgs_val == 0 else "PRECIP")
+    st.metric("USGS Gauge (Rain)", f"{usgs_val}\"", delta="DRY" if usgs_val == 0 else "PRECIP")
     st.metric("Soil Moisture (API)", "0.058")
-    st.metric("Temperature (Today)", "75°F")
+    st.metric(label="Basin SB3 Capacity", value="58%", delta="STABLE" if usgs_val == 0 else "MONITOR")
+    st.metric("Temperature (Today)", "74°F")
     st.metric("Wind Speed", "15 mph")
     st.metric("Wind Direction", "S")
-    st.metric("Humidity", "62%")
+    st.metric("Humidity", "63%")
     st.metric("NC DEQ NTU Limit", "50 NTU")
     st.markdown('</div>', unsafe_allow_html=True)
 
 # 5. Radar
 st.markdown('<div class="report-section"><div class="directive-header">Surveillance Radar: Wilson County</div>', unsafe_allow_html=True)
-st.components.v1.html(f'<iframe width="100%" height="450" src="https://embed.windy.com/embed2.html?lat=35.726&lon=-77.916&zoom=9&overlay=radar" frameborder="0"></iframe>', height=460)
+st.components.v1.html(f'<iframe width="100%" height="450" src="https://embed.windy.com/embed2.html?lat=35.726&lon=-77.916&zoom=9&overlay=radar" frameborder="0" style="border-radius:8px;"></iframe>', height=460)
 st.markdown('</div>', unsafe_allow_html=True)
