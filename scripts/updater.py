@@ -17,17 +17,29 @@ SITES = [
         "usgs_id": "02146409",
         "icao": "KCLT",
         "location": "Charlotte, NC"
+    },
+    {
+        "name": "NCCAT - Cullowhee, NC",
+        "file": "../data/cullowhee_site.json",
+        "usgs_id": "03460000",  # Tuckasegee River at Bryson City (nearest USGS gauge)
+        "icao": "24A",          # Jackson County Airport
+        "location": "Cullowhee, NC"
     }
 ]
 
 def get_rain(usgs_id):
     # Simulated rain values based on current site triggers
-    return 0.74 if usgs_id == "02146409" else 0.05
+    if usgs_id == "02146409":
+        return 0.74   # Charlotte
+    elif usgs_id == "03460000":
+        return 0.05   # Cullowhee
+    else:
+        return 0.05   # Wilson (default)
 
 for site in SITES:
     print(f"Updating data for {site['name']}...")
     rain_val = get_rain(site['usgs_id'])
-    
+
     new_data = {
         "project_name": site['name'],
         "location": site['location'],
@@ -40,7 +52,7 @@ for site in SITES:
         "concrete": { "temp_low": 42, "blankets_required": False, "notes": "Curing monitor active." },
         "crane": { "wind_speed": 12, "status": "GO" }
     }
-    
+
     # Save the data
     try:
         with open(site['file'], 'w') as f:
